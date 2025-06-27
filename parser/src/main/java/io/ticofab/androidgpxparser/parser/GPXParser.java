@@ -23,6 +23,7 @@ import io.ticofab.androidgpxparser.parser.domain.Metadata;
 import io.ticofab.androidgpxparser.parser.domain.Point;
 import io.ticofab.androidgpxparser.parser.domain.Route;
 import io.ticofab.androidgpxparser.parser.domain.RoutePoint;
+import io.ticofab.androidgpxparser.parser.domain.SegmentExtension;
 import io.ticofab.androidgpxparser.parser.domain.Track;
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint;
 import io.ticofab.androidgpxparser.parser.domain.TrackSegment;
@@ -71,6 +72,11 @@ public class GPXParser {
     // extensions-related tags
     static private final String TAG_EXTENSIONS = "extensions";
     static private final String TAG_SPEED = "speed";
+
+    ///  Navionics boating app track export extensions
+    static private final String NAVIONICS_SPEED = "navionics_speed";
+    static private final String NAVIONICS_START_TIME = "navionics_start_time";
+    static private final String NAVIONICS_END_TIME = "navionics_end_time";
 
     static private final String namespace = null;
 
@@ -223,6 +229,7 @@ public class GPXParser {
     // Processes summary tags in the feed.
     private TrackSegment readSegment(XmlPullParser parser) throws IOException, XmlPullParserException {
         List<TrackPoint> points = new ArrayList<>();
+        SegmentExtension segmentExtension = null;
         parser.require(XmlPullParser.START_TAG, namespace, TAG_SEGMENT);
         while (loopMustContinue(parser.next())) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -231,6 +238,8 @@ public class GPXParser {
             String name = parser.getName();
             if (TAG_TRACK_POINT.equals(name)) {
                 points.add(readTrackPoint(parser));
+            } else if (TAG_EXTENSIONS.equals(name)) {
+                segmentExtension = readSegmentExtension(parser);
             } else {
                 skip(parser);
             }
@@ -238,7 +247,33 @@ public class GPXParser {
         parser.require(XmlPullParser.END_TAG, namespace, TAG_SEGMENT);
         return new TrackSegment.Builder()
                 .setTrackPoints(points)
+                .setSegmentExtension(segmentExtension)
                 .build();
+    }
+
+    private SegmentExtension readSegmentExtension(XmlPullParser parser) throws XmlPullParserException, IOException {
+        SegmentExtension.Builder extensionsBuilder = new SegmentExtension.Builder();
+
+        parser.require(XmlPullParser.START_TAG, namespace, TAG_EXTENSIONS);
+        while (loopMustContinue(parser.next())) {
+            if (parser.getEventType() != XmlPullParser.START_TAG) {
+                continue;
+            }
+            String name = parser.getName();
+            switch (name) {
+                case NAVIONICS_START_TIME:
+                    extensionsBuilder.setStartTime(readTime(parser, NAVIONICS_START_TIME));
+                    break;
+                case NAVIONICS_END_TIME:
+                    extensionsBuilder.setEndTime(readTime(parser, NAVIONICS_END_TIME));
+                    break;
+                default:
+                    skip(parser);
+                    break;
+            }
+        }
+        parser.require(XmlPullParser.END_TAG, namespace, TAG_EXTENSIONS);
+        return extensionsBuilder.build();
     }
 
     private Route readRoute(XmlPullParser parser) throws IOException, XmlPullParserException {
@@ -316,7 +351,7 @@ public class GPXParser {
                     builder.setElevation(readElevation(parser));
                     break;
                 case TAG_TIME:
-                    builder.setTime(readTime(parser));
+                    builder.setTime(readTime(parser, TAG_TIME));
                     break;
                 case TAG_TYPE:
                     builder.setType(readType(parser));
@@ -366,7 +401,7 @@ public class GPXParser {
                     metadataBuilder.setLink(readLink(parser));
                     break;
                 case TAG_TIME:
-                    metadataBuilder.setTime(readTime(parser));
+                    metadataBuilder.setTime(readTime(parser, TAG_TIME));
                     break;
                 case TAG_KEYWORDS:
                     metadataBuilder.setKeywords(readString(parser, TAG_KEYWORDS));
@@ -495,12 +530,13 @@ public class GPXParser {
         return ele;
     }
 
-    private DateTime readTime(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, namespace, TAG_TIME);
+    private DateTime readTime(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, namespace, tag);
         DateTime time = ISODateTimeFormat.dateTimeParser().parseDateTime(readText(parser));
-        parser.require(XmlPullParser.END_TAG, namespace, TAG_TIME);
+        parser.require(XmlPullParser.END_TAG, namespace, tag);
         return time;
     }
+
     private String readSym(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, namespace, TAG_SYM);
         String value = readText(parser);
@@ -524,8 +560,8 @@ public class GPXParser {
         return number;
     }
 
-    private Double readSpeed(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, namespace, TAG_SPEED);
+    private Double readSpeed(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, namespace, tag);
         double speed;
         try {
             speed = Double.parseDouble(readText(parser));
@@ -533,7 +569,7 @@ public class GPXParser {
             // there was an issue parsing speed, default to 0.0
             speed = 0.0;
         }
-        parser.require(XmlPullParser.END_TAG, namespace, TAG_SPEED);
+        parser.require(XmlPullParser.END_TAG, namespace, tag);
         return speed;
     }
 
@@ -563,7 +599,10 @@ public class GPXParser {
             String name = parser.getName();
             switch (name) {
                 case TAG_SPEED:
-                    extensionsBuilder.setSpeed(readSpeed(parser));
+                    extensionsBuilder.setSpeed(readSpeed(parser, TAG_SPEED));
+                    break;
+                case NAVIONICS_SPEED:
+                    extensionsBuilder.setSpeed(readSpeed(parser, NAVIONICS_SPEED));
                     break;
                 default:
                     skip(parser);
