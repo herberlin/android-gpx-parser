@@ -4,22 +4,27 @@ plugins {
 }
 
 android {
-    compileSdk 33
-    buildToolsVersion '33.0.0'
+    namespace "io.ticofab.androidgpxparser.parser"
+    compileSdk 35
 
     useLibrary 'android.test.runner'
     useLibrary 'android.test.base'
     useLibrary 'android.test.mock'
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 33
+        minSdkVersion 21
+        targetSdkVersion 35
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+
+        applicationId "io.ticofab.androidgpxparser"
+        versionName "2.4.0"
+
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
         }
     }
     compileOptions {
@@ -31,29 +36,30 @@ android {
 dependencies {
     // JodaTime for Android
     // https://github.com/dlew/joda-time-android
-    api 'net.danlew:android.joda:2.12.1.1'
+    api 'net.danlew:android.joda:2.13.1'
 
-    implementation "androidx.annotation:annotation:1.5.0"
+    implementation 'androidx.annotation:annotation:1.9.1'
 
     androidTestImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test:rules:1.5.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
 }
 
 
-afterEvaluate {
-    publishing {
-        publications {
-            // Creates a Maven publication called "release".
-            release(MavenPublication) {
-                // Applies the component for the release build variant.
-                from components.release
-
-                // You can then customize attributes of the publication as shown below.
-                groupId = 'com.github.ticofab'
-                artifactId = 'android-gpx-parser'
-                version = '2.3.1'
-            }
-        }
-    }
-}
+// TODO: Fix deployment
+//afterEvaluate {
+//    publishing {
+//        publications {
+//            // Creates a Maven publication called "release".
+//            release(MavenPublication) {
+//                // Applies the component for the release build variant.
+//                from components.release
+//
+//                // You can then customize attributes of the publication as shown below.
+//                groupId = 'com.github.ticofab'
+//                artifactId = 'android-gpx-parser'
+//                version = '2.3.1'
+//            }
+//        }
+//    }
+//}

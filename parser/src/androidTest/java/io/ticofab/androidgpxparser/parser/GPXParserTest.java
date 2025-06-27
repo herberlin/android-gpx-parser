@@ -1,5 +1,10 @@
 package io.ticofab.androidgpxparser.parser;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import android.content.res.AssetManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -7,6 +12,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParserException;
@@ -17,14 +23,14 @@ import java.io.InputStream;
 import io.ticofab.androidgpxparser.parser.domain.Author;
 import io.ticofab.androidgpxparser.parser.domain.Copyright;
 import io.ticofab.androidgpxparser.parser.domain.Email;
+import io.ticofab.androidgpxparser.parser.domain.Extensions;
 import io.ticofab.androidgpxparser.parser.domain.Gpx;
 import io.ticofab.androidgpxparser.parser.domain.Link;
 import io.ticofab.androidgpxparser.parser.domain.Metadata;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import io.ticofab.androidgpxparser.parser.domain.SegmentExtension;
+import io.ticofab.androidgpxparser.parser.domain.Track;
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint;
+import io.ticofab.androidgpxparser.parser.domain.TrackSegment;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -142,6 +148,39 @@ public class GPXParserTest {
         assertEquals("Jane Doe", copyright.getAuthor());
         assertNull(copyright.getYear());
         assertNull(copyright.getLicense());
+    }
+
+
+    /**
+     * Test for navionics boating app exported track.
+     * Adds speed, startTime and endTime to extensions.
+     * @throws IOException
+     * @throws XmlPullParserException
+     */
+    @Test
+    public void testNavionicsExport() throws IOException, XmlPullParserException {
+        InputStream input = getAssets().open("navionics.gpx");
+        Gpx gpx = new GPXParser().parse(input);
+        assertEquals(0, gpx.getWayPoints().size());
+        assertEquals(0, gpx.getRoutes().size());
+        assertEquals(1, gpx.getTracks().size());
+        Track track = gpx.getTracks().get(0);
+        assertEquals("Track 023", track.getTrackName());
+        assertEquals(1, track.getTrackSegments().size());
+        TrackSegment segment = track.getTrackSegments().get(0);
+        assertEquals(10212, segment.getTrackPoints().size());
+        TrackPoint tp = segment.getTrackPoints().get(2);
+        assertEquals(57.199252, tp.getLatitude(), 0.0001);
+        assertEquals(12.157856, tp.getLongitude(), 0.0001);
+        assertEquals("2025-06-23T03:41:41.936Z", tp.getTime().toDateTime(DateTimeZone.UTC).toString());
+        Extensions ext = tp.getExtensions();
+        assertNotNull(ext);
+        assertEquals(2.010, ext.getSpeed(), 0.001);
+
+        SegmentExtension segmentExtension = segment.getSegmentExtension();
+        assertNotNull(segmentExtension);
+        assertEquals("2025-06-23T03:41:38.662Z", segmentExtension.getStartTime().toDateTime(DateTimeZone.UTC).toString());
+        assertEquals("2025-06-23T09:56:42.185Z", segmentExtension.getEndTime().toDateTime(DateTimeZone.UTC).toString());
     }
 
     public AssetManager getAssets() {

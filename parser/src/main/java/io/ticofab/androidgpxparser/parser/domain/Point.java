@@ -51,7 +51,7 @@ public abstract class Point {
         return mElevation;
     }
 
-    public DateTime getTime() {
+        public DateTime getTime() {
         return mTime;
     }
 

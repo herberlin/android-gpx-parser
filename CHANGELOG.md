@@ -1,4 +1,10 @@
 # Change Log
+## 2.4.0 *(Jun 27th 2025)*
+
+* Gradle 8.11.1 and Android Gradle Plugin 8.10.1
+* Build sdk 35, min sdk version 21
+* Update dependencies 
+* Implementation to read navionics tracking extensions (see: parser/src/androidTest/assets/navionics.gpx)
 
 ## 2.3.1 *(Feb 15th 2023)*
 
